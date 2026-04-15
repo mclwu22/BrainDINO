@@ -1,4 +1,4 @@
-> **Note:** The pretrained weights and full self-supervised pretraining pipeline are not released at this stage due to the large-scale multi-dataset integration and computational requirements. All methodological details are described in the manuscript, and the full code and weights will be made publicly available upon publication.
+> ⚠️ **Note:** The pretrained weights and full self-supervised pretraining pipeline are not released at this stage due to the large-scale multi-dataset integration and substantial computational requirements. All methodological details are described in the manuscript, and the full code and weights will be made publicly available upon publication.
 
 # BrainDINO Downstream Evaluation
 
