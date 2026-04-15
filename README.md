@@ -126,9 +126,15 @@ The main runnable tasks are:
 - `Foundation_model_paper_contents/Visualization/`
   Frozen-feature kNN evaluation, feature caching, ADNI/OASIS plotting, and McNemar significance analysis.
 
-## Segmentation Placeholder
+## Segmentation
 
-Tumor segmentation remains intentionally reserved as a placeholder in this organized task overview. The paper results are already part of the repository, but the corresponding BraTS segmentation entrypoints are not yet organized here into a single minimal launcher. A dedicated segmentation section can be added once those scripts are cleaned to the same standard as the rest of the downstream suite.
+Tumor segmentation code is provided in the `BrainDINO_seg/` directory (see repository structure above).
+
+This module follows an nnU-Net–based pipeline, adapted to support BrainDINO as a frozen or partially frozen encoder within the segmentation framework. Due to the complexity of the original training setup and dataset dependencies, the segmentation entrypoints are not yet unified into a single minimal launcher within the organized downstream task interface.
+
+For detailed usage, configuration, and training procedures, please refer to the README file inside the `BrainDINO_seg/` folder.
+
+We will further streamline and integrate these entrypoints into the main downstream task registry in future updates.
 
 ## Outputs
 
