@@ -1,5 +1,6 @@
-> ⚠️ **Note:** The pretrained weights and full self-supervised pretraining pipeline are not released at this stage due to the large-scale multi-dataset integration and substantial computational requirements. All methodological details are described in the manuscript, and the full code and weights will be made publicly available upon publication.
+## ⚠️ Code & Weights Availability
 
+The pretrained weights and full self-supervised pretraining pipeline are not released at this stage due to the large-scale multi-dataset integration and substantial computational requirements. All methodological details are described in the manuscript, and the full code and weights will be made publicly available upon publication.
 # BrainDINO Downstream Evaluation
 
 This directory provides an organized, task-oriented entry layer for the downstream evaluation suite used in the BrainDINO paper. The goal is not to replace every historical experiment script in the repository. Instead, it offers a compact, reproducible overview of the core downstream tasks, together with unified launch points for the main BrainDINO comparisons.
