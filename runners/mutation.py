@@ -1,6 +1,18 @@
+"""Mutation-prediction task launcher (IDH status on UCSF-PDGM).
+
+How the task is done:
+  * Inputs: two MRI modalities (T1c + FLAIR); preprocessing handled by the UCSF loader.
+  * Model pipeline: a frozen pretrained encoder produces per-slice CLS tokens that are
+    mean-pooled per modality; a lightweight head is trained on top while the encoder
+    stays frozen.
+  * Loss: cross-entropy.
+  * Metric: macro-AUC.
+
+This is a minimal launch shell. It only builds the task config and runs training;
+checkpoint selection, evaluation, and result reporting are left to the user.
+"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from downstream_tasks.bootstrap import bootstrap_paths
@@ -67,17 +79,9 @@ def run_task(spec, args):
     trainer = MutationUCSFTrainer(config)
     trainer.train()
 
-    best_model = save_dir / "model_best.pth"
-    if best_model.exists():
-        trainer.load_model_state_dict(str(best_model))
-
-    metrics = trainer.evaluate()
-    summary = {
+    return {
+        "status": "trained",
         "task_id": spec.task_id,
         "encoder": encoder,
         "save_dir": str(save_dir),
-        "metrics": metrics,
     }
-    write_json(save_dir / "summary.json", summary)
-    (save_dir / "summary.txt").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    return summary

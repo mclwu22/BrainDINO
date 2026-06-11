@@ -9,7 +9,7 @@ The organized runners in this folder are designed around the evaluation protocol
 
 - BrainDINO is evaluated as a pretrained encoder on a diverse set of downstream neuroimaging tasks.
 - Most supervised tasks use lightweight task heads on top of a frozen or fixed pretrained encoder backbone.
-- Frozen-feature evaluation is explicitly included through a subject-level kNN pipeline on ADNI and OASIS.
+- The runners are minimal launch shells: they document how each task is set up (preprocessing, model pipeline, loss, metric) and start training. Checkpoint selection, evaluation, metric computation, significance testing, and figure/report generation are intentionally left to the user.
 - The same interface can be used to compare BrainDINO against DINOv3, BM-MAE, BrainMVP, and BrainIAC wherever the corresponding task code is available.
 
 ## What Is Included
@@ -19,8 +19,8 @@ The current organized task layer covers the following downstream settings:
 - Classification: ABIDE, ADNI, OASIS, BraTS sequence classification, and binary survival classification on UPENN-GBM.
 - Regression: brain age estimation on IXI + LONG579 + Pixar, and post-stroke temporal prediction on ATLAS.
 - Mutation prediction: UCSF-PDGM multi-modal mutation classification.
-- Survival risk modeling: multi-modal Cox-style survival modeling and Kaplan-Meier risk stratification on UPENN-GBM.
-- Frozen encoder analysis: subject-level kNN probing on ADNI and OASIS, using cached frozen features from the paper visualization pipeline.
+- Survival risk modeling: multi-modal Cox-style survival model training on UPENN-GBM.
+- Frozen encoder analysis: subject-level kNN probing on ADNI and OASIS is kept in the registry as a reserved (non-runnable) entry; its evaluation/significance code is not included here.
 - Segmentation: a reserved placeholder is kept in the registry for future cleanup of the tumor segmentation entrypoints.
 
 ## Evaluation Protocol
@@ -36,19 +36,12 @@ For the supervised classification and regression tasks, the organized runners wr
 
 ### Frozen-feature kNN probing
 
-The frozen-feature kNN experiments are implemented in the repository-level path:
-
-`Foundation_model_paper_contents/Visualization/`
-
-This pipeline:
-
-- loads pretrained encoders without downstream finetuning,
-- extracts subject-level features from fixed train/test splits,
-- caches those features under `feature_cache/`,
-- evaluates kNN accuracy across multiple `k` values,
-- and produces the paper-facing ADNI/OASIS figures and McNemar significance analyses.
-
-Within the organized task registry, this experiment is exposed as `knn_adni_oasis`.
+Method (for reference): pretrained encoders are used without any downstream finetuning;
+subject-level features are L2-normalized; the train split serves as the memory bank and
+a query is labelled by cosine-similarity majority vote over its k nearest neighbours.
+The evaluation, k sweep, significance testing, and figure generation are not included in
+this minimal task layer; `knn_adni_oasis` is kept in the registry as a reserved
+(non-runnable) entry.
 
 ## Quick Start
 
@@ -71,12 +64,6 @@ python -m downstream_tasks.run --task adni_cls --encoder meddinov3
 python -m downstream_tasks.run --task brain_age_reg --encoder bm_mae --train-ratio 0.4
 python -m downstream_tasks.run --task mutation_ucsf --encoder brainmvp
 python -m downstream_tasks.run --task upenn_survival_cox --encoder brainiac
-```
-
-Run the frozen-feature kNN evaluation:
-
-```bash
-python -m downstream_tasks.run --task knn_adni_oasis --encoder meddinov3
 ```
 
 Inspect a configuration without launching training or evaluation:
@@ -112,8 +99,7 @@ The main runnable tasks are:
 | `brain_age_reg` | regression | IXI + LONG579 + Pixar | brain age estimation |
 | `atlas_reg` | regression | ATLAS | post-stroke temporal prediction |
 | `mutation_ucsf` | mutation | UCSF-PDGM | multi-modal mutation prediction |
-| `upenn_survival_cox` | survival | UPENN-GBM | Kaplan-Meier risk stratification |
-| `knn_adni_oasis` | frozen-feature analysis | ADNI + OASIS | subject-level kNN probing |
+| `upenn_survival_cox` | survival | UPENN-GBM | multi-modal Cox-style survival training |
 
 ## Repository Structure
 
@@ -124,10 +110,9 @@ The main runnable tasks are:
   Formal mapping from task IDs to datasets, metrics, code entrypoints, and paper tables.
 
 - `runners/`
-  Thin wrappers around the existing downstream training code. These are intentionally lightweight and avoid rewriting the original task logic.
-
-- `Foundation_model_paper_contents/Visualization/`
-  Frozen-feature kNN evaluation, feature caching, ADNI/OASIS plotting, and McNemar significance analysis.
+  Minimal launch shells around the existing downstream training code. They build the
+  task config and start training only; they do not select checkpoints, evaluate, or
+  report results.
 
 ## Segmentation
 
@@ -147,11 +132,13 @@ By default, organized runs are written to:
 LUNA16/downstream_tasks_runs/<task_id>/<encoder>/ratio_<N>/
 ```
 
-Each organized run writes at least:
+Each organized run writes:
 
-- `run_manifest.json`
-- `summary.json`
-- task-specific checkpoints, CSVs, or per-case predictions when the underlying runner produces them
+- `run_manifest.json` (the resolved task configuration)
+- training checkpoints saved by the underlying trainer
+
+Evaluation outputs, metric summaries, per-case predictions, and figures are not produced
+by these shells; computing, selecting, and reporting results is left to the user.
 
 ## Scope
 

@@ -1,6 +1,18 @@
+"""Survival task launcher (multi-modal Cox-style risk model on UPENN-GBM).
+
+How the task is done:
+  * Inputs: multi-modal MRI; preprocessing handled by the survival loader.
+  * Model pipeline: a frozen pretrained encoder produces per-slice CLS tokens that are
+    mean-pooled into a volume embedding; a lightweight risk head is trained on top while
+    the encoder stays frozen.
+  * Loss: Cox partial-likelihood (risk regression).
+
+This is a minimal launch shell. It only builds the task config and runs training;
+risk-score thresholding, Kaplan-Meier stratification, log-rank testing, and any other
+evaluation/reporting are left to the user.
+"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from downstream_tasks.bootstrap import bootstrap_paths
@@ -61,71 +73,16 @@ def run_cox_task(spec, args):
             "config": serialize_config(config),
         }
 
-    import numpy as np
-    import pandas as pd
-
     from SurvivalRiskStratification_KaplanMeier.trainers.survival_multimodal_trainer import (
         SurvivalMultiModalTrainer,
-    )
-    from SurvivalRiskStratification_KaplanMeier.utils.survival_utils import (
-        compute_logrank_pvalue,
-        compute_median_risk_threshold,
-        plot_kaplan_meier,
-        stratify_patients,
     )
 
     trainer = SurvivalMultiModalTrainer(config)
     trainer.train()
 
-    best_model = save_dir / "model_best.pth"
-    if best_model.exists():
-        trainer.load_model_state_dict(str(best_model))
-
-    train_risk_scores, train_survival, train_events, train_ids = trainer.predict(trainer.train_dataloader)
-    val_risk_scores, val_survival, val_events, val_ids = trainer.predict(trainer.eval_dataloader)
-
-    threshold = compute_median_risk_threshold(train_risk_scores)
-    val_groups = stratify_patients(val_risk_scores, threshold)
-    p_value = compute_logrank_pvalue(val_survival, val_events, val_groups)
-
-    km_plot = save_dir / "kaplan_meier_validation.png"
-    plot_kaplan_meier(
-        survival_times=val_survival,
-        events=val_events,
-        risk_groups=val_groups,
-        save_path=str(km_plot),
-        title=f"Kaplan-Meier Curve - {encoder}",
-    )
-
-    risk_df = pd.DataFrame(
-        {
-            "patient_id": val_ids,
-            "risk_score": val_risk_scores,
-            "risk_group": val_groups,
-            "survival_time": val_survival,
-            "event": val_events,
-        }
-    )
-    risk_csv = save_dir / "risk_stratification_results.csv"
-    risk_df.to_csv(risk_csv, index=False)
-
-    low_mask = val_groups == 0
-    high_mask = val_groups == 1
-    summary = {
+    return {
+        "status": "trained",
         "task_id": spec.task_id,
         "encoder": encoder,
         "save_dir": str(save_dir),
-        "metrics": {
-            "threshold": float(threshold),
-            "p_value": float(p_value),
-            "low_risk_n": int(low_mask.sum()),
-            "high_risk_n": int(high_mask.sum()),
-            "low_risk_median_survival": float(np.median(val_survival[low_mask])) if low_mask.any() else None,
-            "high_risk_median_survival": float(np.median(val_survival[high_mask])) if high_mask.any() else None,
-            "train_sample_count": int(len(train_ids)),
-            "val_sample_count": int(len(val_ids)),
-        },
     }
-    write_json(save_dir / "summary.json", summary)
-    (save_dir / "summary.txt").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    return summary

@@ -1,6 +1,19 @@
+"""Regression task launcher (brain age on IXI+LONG579+Pixar; post-stroke days on ATLAS).
+
+How the task is done:
+  * Preprocessing: handled by each dataset loader; every 3D volume is sampled into
+    ``n_slices`` (128) axial slices. ATLAS additionally uses a ``log1p`` target transform.
+  * Model pipeline: a frozen pretrained encoder produces a per-slice CLS token; the
+    slice tokens are mean-pooled into a volume embedding; a lightweight regression head
+    is trained on top while the encoder stays frozen.
+  * Loss: regression objective on the continuous target (ATLAS uses a Huber-style term).
+  * Metric: mean absolute error (MAE).
+
+This is a minimal launch shell. It only builds the task config and runs training;
+checkpoint selection, evaluation, and result reporting are left to the user.
+"""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from downstream_tasks.bootstrap import bootstrap_paths
@@ -94,17 +107,9 @@ def run_task(spec, args):
     trainer = dinov3_volume2d_trainer_general_regression(config)
     trainer.train()
 
-    best_model = save_dir / "model_best.pth"
-    if best_model.exists():
-        trainer.load_model_state_dict(str(best_model))
-
-    metrics = trainer.evaluate(save_predictions=True)
-    summary = {
+    return {
+        "status": "trained",
         "task_id": spec.task_id,
         "encoder": encoder,
         "save_dir": str(save_dir),
-        "metrics": metrics,
     }
-    write_json(save_dir / "summary.json", summary)
-    (save_dir / "summary.txt").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    return summary
