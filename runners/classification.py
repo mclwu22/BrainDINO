@@ -34,7 +34,7 @@ def _build_config(spec, args):
     epochs = args.epochs if args.epochs is not None else (2 if args.quick else 8)
     batch_size = args.batch_size if args.batch_size is not None else 4
     val_batch = args.val_batch if args.val_batch is not None else 4
-    patience = 1 if args.quick else min(4, max(2, epochs // 2))
+    patience = 1 if args.quick else 5  # PLACEHOLDER: set your early-stopping patience
     config = SimpleConfig(
         dataset_name=spec.dataset_name,
         encoder_name=encoder,

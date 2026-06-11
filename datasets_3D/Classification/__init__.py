@@ -1,0 +1,8 @@
+"""
+Downstream target task: classification
+"""
+from datasets_3D.Classification.luna_classification import ClassificationLUNASet
+from datasets_3D.Classification.adni_classification import ADNIClassificationSet
+from datasets_3D.Classification.abide_classification import ABIDEClassificationSet
+from datasets_3D.Classification.Survival_upenn_classification import Survival_upenn_ClassificationSet
+from datasets_3D.Classification.brats_2023_classification import BraTS_2023_ClassificationSet
